@@ -1,42 +1,89 @@
-<div class="jumbotron">
-  <h1 class="display-4">Burgers</h1>
-  <p class="lead">I know you want a burger. But you can't, because all of the restaurants are closed due to COVID-19.
-    You are left to fantasize about all the kinds of burgers and imagine the taste.</p>
-  <form class="create-form form-inline mx-auto">
-    <div class="form-group mb-2">
-      <input placeholder="Burger Name" class="form-control mr-2" type="text" id="burg" name="name">
-    </div>
-    <button type="submit" class="btn btn-primary mb-2">Add Burger</button>
-  </form>
-</div>
+var connection = require("../config/connection.js");
 
-<div class="container">
-  <div class="row">
-    <div class="col">
-      <ul class="list-group">
-        <li class="list-group-item active">
-          <span style="font-weight: 700">Ready to eat!</span>
-        </li>
-        {{#each burgers}}
-        {{#unless devoured}}
-        {{> burgers/burger-block devour=true}}
-        {{/unless}}
-        {{/each}}
-      </ul>
-    </div>
+function printQuestionMarks(num) {
+  var arr = [];
 
-    <div class="col">
-      <ul class="list-group">
-        <li class="list-group-item active">
-          <span style="font-weight: 700">Devoured!</span>
-        </li>
-        {{#each burgers}}
-        {{#if devoured}}
-        {{> burgers/burger-block devour=false}}
-        {{/if}}
-        {{/each}}
-      </ul>
+  for (var i = 0; i < num; i++) {
+    arr.push("?");
+  }
 
-    </div>
-  </div>
-</div>
+  return arr.toString();
+}
+function objToSql(ob) {
+  var arr = [];
+    for (var key in ob) {
+    var value = ob[key];
+    if (Object.hasOwnProperty.call(ob, key)) {
+      if (typeof value === "string" && value.indexOf(" ") >= 0) {
+        value = "'" + value + "'";
+      }
+      arr.push(key + "=" + value);
+    }
+  }
+
+  return arr.toString();
+}
+
+var orm = {
+  all: function(tableInput, cb) {
+    var queryString = "SELECT * FROM " + tableInput + ";";
+    connection.query(queryString, function(err, result) {
+      if (err) {
+        throw err;
+      }
+      cb(result);
+    });
+  },
+  create: function(table, cols, vals, cb) {
+    var queryString = "INSERT INTO " + table;
+
+    queryString += " (";
+    queryString += cols.toString();
+    queryString += ") ";
+    queryString += "VALUES (";
+    queryString += printQuestionMarks(vals.length);
+    queryString += ") ";
+
+    console.log(queryString);
+
+    connection.query(queryString, vals, function(err, result) {
+      if (err) {
+        throw err;
+      }
+
+      cb(result);
+    });
+  },
+  update: function(table, objColVals, condition, cb) {
+    var queryString = "UPDATE " + table;
+
+    queryString += " SET ";
+    queryString += objToSql(objColVals);
+    queryString += " WHERE ";
+    queryString += condition;
+
+    console.log(queryString);
+    connection.query(queryString, function(err, result) {
+      if (err) {
+        throw err;
+      }
+
+      cb(result);
+    });
+  },
+  delete: function(table, condition, cb) {
+    var queryString = "DELETE FROM " + table;
+    queryString += " WHERE ";
+    queryString += condition;
+
+    connection.query(queryString, function(err, result) {
+      if (err) {
+        throw err;
+      }
+
+      cb(result);
+    });
+  }
+};
+
+module.exports = orm;
